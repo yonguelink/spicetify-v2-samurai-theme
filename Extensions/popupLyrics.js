@@ -332,6 +332,7 @@ function PopupLyrics() {
     }
 
     let lyricVideoIsOpen = false;
+    let lyricVideoHiddenDueToNoLyrics = false;
     lyricVideo.onenterpictureinpicture = () => {
         lyricVideoIsOpen = true;
         tick(userConfigs);
@@ -379,8 +380,12 @@ function PopupLyrics() {
     Player.addEventListener("songchange", updateTrack);
 
     async function updateTrack() {
-        if (!lyricVideoIsOpen) {
+        if (!lyricVideoIsOpen && !lyricVideoHiddenDueToNoLyrics) {
             return;
+        }
+
+        if (lyricVideoHiddenDueToNoLyrics) {
+            lyricVideo.requestPictureInPicture();
         }
 
         const meta = Player.data.track.metadata;
@@ -418,6 +423,8 @@ function PopupLyrics() {
             }
         }
         if (error || !sharedData.lyrics) {
+            lyricVideoHiddenDueToNoLyrics = true;
+            document.exitPictureInPicture();
             sharedData = { error: "No lyric" };
         }
     }

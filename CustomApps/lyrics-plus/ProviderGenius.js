@@ -19,19 +19,22 @@ const ProviderGenius = (function () {
         return acc.trim();
     }
 
-    async function getNote(link) {
-        let id = link.match(/\/(\d+)\//);
+    async function getNote(el) {
+        let id = el.pathname.match(/\/(\d+)\//);
         if (!id) {
-            id = link.match(/#note-(\d+)/);
+            id = el.dataset.id;
+        } else {
+            id = id[1];
         }
-        id = id[1];
+        
         const body = await CosmosAsync.get(`https://genius.com/api/annotations/${id}`);
         const response = body.response;
         let note = "";
 
         // Authors annotations
         if (response.referent && response.referent.classification == "verified") {
-            const referents = await CosmosAsync.get(`https://genius.com/api/referents/${id}`);
+            const referentsBody = await CosmosAsync.get(`https://genius.com/api/referents/${id}`);
+            const referents = referentsBody.response;
             for (const ref of referents.referent.annotations) {
                 note += getChildDeep(ref.body.dom);
             }
@@ -67,9 +70,10 @@ const ProviderGenius = (function () {
         });
     }
 
-    async function downloadLyricFromLink(result) {
+    async function fetchLyricsVersion(results, index) {
+        const result = results[index];
         if (!result) {
-            console.warn(info)
+            console.warn(result)
             return;
         }
 
@@ -116,14 +120,13 @@ const ProviderGenius = (function () {
             }));
 
         if (!hits.length) {
-            return null;
+            return { lyrics: null, versions: [] };
         }
 
-        const lyrics = await downloadLyricFromLink(hits[0]);
+        const lyrics = await fetchLyricsVersion(hits, 0);
 
-        // TODO: Other versions selections
-        return lyrics;
+        return {lyrics, versions: hits};
     }
 
-    return { fetchLyrics, getNote }
+    return { fetchLyrics, getNote, fetchLyricsVersion }
 })();

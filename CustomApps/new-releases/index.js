@@ -36,6 +36,8 @@ const CONFIG = {
     ["appears-on"]: getConfig("new-releases:appears-on", false),
     compilations: getConfig("new-releases:compilations", false),
     range: localStorage.getItem("new-releases:range") || "30",
+    locale: localStorage.getItem("new-releases:locale") || navigator.language,
+    relative: getConfig("new-releases:compilations", false),
 };
 
 let gridList = [];
@@ -45,12 +47,15 @@ let gridUpdatePostsVisual;
 
 let today = new Date();
 CONFIG.range = parseInt(CONFIG.range) || 30;
-let limitInMs = CONFIG.range * 24 * 3600 * 1000;
+const DAY_DIVIDER = 24 * 3600 * 1000;
+let limitInMs = CONFIG.range * DAY_DIVIDER;
 const dateFormat = {
-    weekday: "short",
     year: "numeric",
-    month: "2-digit",
-    day: "numeric"
+    month: "short",
+    day: "2-digit"
+};
+const relativeDateFormat = {
+    numeric: "auto",
 };
 let seperatedByDate = {};
 let dateList = [];
@@ -87,7 +92,7 @@ class Grid extends react.Component {
 
         today = new Date();
         CONFIG.range = parseInt(CONFIG.range) || 30;
-        limitInMs = CONFIG.range * 24 * 3600 * 1000;
+        limitInMs = CONFIG.range * DAY_DIVIDER;
 
         this.setState({ rest: false });
         let items = [];
@@ -100,17 +105,29 @@ class Grid extends react.Component {
             items.push(...episodes);
         }
 
-        // TODO: Config sort Asc, desc
         items = items.filter(a => a).sort((a, b) => b.time - a.time);
+
+        let timeFormat;
+        if (CONFIG.relative) {
+            timeFormat = new Intl.RelativeTimeFormat(CONFIG.locale, relativeDateFormat);
+        } else {
+            timeFormat = new Intl.DateTimeFormat(CONFIG.locale, dateFormat)
+        }
 
         for (const track of items) {
             track.visual = CONFIG.visual;
-            track.time = track.time.toLocaleDateString(navigator.language, dateFormat);
-            if (!seperatedByDate[track.time]) {
-                dateList.push(track.time);
-                seperatedByDate[track.time] = [];
+            let dateStr;
+            if (CONFIG.relative) {
+                const days = Math.ceil((track.time - today) / DAY_DIVIDER);
+                dateStr = timeFormat.format(days, "day");
+            } else {
+                dateStr = timeFormat.format(track.time);
             }
-            seperatedByDate[track.time].push(react.createElement(Card, track));
+            if (!seperatedByDate[dateStr]) {
+                dateList.push(dateStr);
+                seperatedByDate[dateStr] = [];
+            }
+            seperatedByDate[dateStr].push(react.createElement(Card, track));
         }
 
         for (const date of dateList) {
@@ -205,7 +222,10 @@ async function getPodcastList() {
 }
 
 async function getPodcastRelease(uri) {
-    const body = await CosmosAsync.get(`sp://core-show/unstable/show/${uri}`);
+    const body = await CosmosAsync.get(
+        `sp://core-show/unstable/show/${uri}?responseFormat=protobufJson`,
+        { policy: { list: { link: true, name: true, publishDate: true } } }
+    );
     return body.items;
 }
 
@@ -249,17 +269,20 @@ async function fetchPodcasts() {
         if (!tracks) continue;
 
         for (const track of tracks) {
-            const time = new Date(track.publishDate * 1000);
+            const time = new Date(track.episodeMetadata.publishDate * 1000);
 
             if ((today - time.getTime()) > limitInMs) {
                 break;
             }
 
             items.push(({
-                uri: track.link,
-                title: track.name,
-                artist: podcast.name,
-                imageURL: track.covers.default,
+                uri: track.episodeMetadata.link,
+                title: track.episodeMetadata.name,
+                artist: {
+                    name: podcast.name,
+                    uri: podcast.link,
+                },
+                imageURL: podcast.covers.standardLink,
                 time,
                 type: "Episode",
             }));

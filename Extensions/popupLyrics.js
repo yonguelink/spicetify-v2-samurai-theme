@@ -410,11 +410,6 @@ function PopupLyrics() {
                 console.log(data);
                 if (!data.error && data.lyrics) {
                     sharedData = data;
-
-                    if (lyricVideoHiddenDueToNoLyrics) {
-                        lyricVideo.requestPictureInPicture();
-                    }
-
                     return;
                 }
             } catch(err) {
@@ -425,6 +420,8 @@ function PopupLyrics() {
             lyricVideoHiddenDueToNoLyrics = true;
             document.exitPictureInPicture();
             sharedData = { error: "No lyric" };
+        } else if (lyricVideoHiddenDueToNoLyrics) {
+            lyricVideo.requestPictureInPicture();
         }
     }
 

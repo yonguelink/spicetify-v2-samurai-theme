@@ -98,17 +98,13 @@
      * @param {string[]} uris 
      */
     function toggleThrow(uris) {
-        let uri = uris[0];
+        const uri = uris[0];
         const uriObj = Spicetify.URI.fromString(uri);
         const type = uriObj.type;
 
         let list = type === Spicetify.URI.Type.TRACK ?
             trashSongList :
             trashArtistList;
-
-        uri = type === Spicetify.URI.Type.TRACK ?
-            Spicetify.Player.data.track.uri : 
-            Spicetify.Player.data.track.metadata.artist_uri;
 
         if (!list[uri]) {
             list[uri] = true;
@@ -132,12 +128,8 @@
             return false;
         }
 
-        let uri = uris[0];
+        const uri = uris[0];
         const uriObj = Spicetify.URI.fromString(uri);
-        uri = uriObj.type === Spicetify.URI.Type.TRACK ?
-            Spicetify.Player.data.track.uri : 
-            Spicetify.Player.data.track.metadata.artist_uri;
-
         if (uriObj.type === Spicetify.URI.Type.TRACK) {
             this.name = trashSongList[uri] ? UNTHROW_TEXT : THROW_TEXT;
             return true;

@@ -215,7 +215,6 @@ class LyricsContainer extends react.Component {
 
     componentDidMount() {
         this.onQueueChange = async (queue) => {
-            this.viewPort.scrollTo(0, 0)
             this.state.explicitMode = this.state.lockMode;
             this.currentTrackUri = queue.track.uri;
             const [nextTrack] = queue.future;
@@ -230,6 +229,7 @@ class LyricsContainer extends react.Component {
             }
             this.nextTrackUri = nextInfo.uri;
             await this.fetchLyrics(queue.track, this.state.explicitMode);
+            this.viewPort.scrollTo(0, 0);
             // Fetch next track
             this.tryServices(nextInfo, this.state.explicitMode);
         };
@@ -243,10 +243,14 @@ class LyricsContainer extends react.Component {
         };
 
         this.viewPort = document.querySelector(".Root__main-view .os-viewport");
+
+        this.configButton = new Spicetify.Menu.Item("Lyrics Plus config", false, openConfig);
+        this.configButton.register();
     }
 
     componentWillUnmount() {
         Utils.removeQueueListener(this.onQueueChange);
+        this.configButton.deregister();
     }
 
     updateVisualOnConfigChange() {
@@ -354,17 +358,14 @@ class LyricsContainer extends react.Component {
                 links: this.availableModes,
                 activeLink: CONFIG.modes[mode],
                 lockLink: CONFIG.modes[this.state.lockMode],
-                switchCallback: (event) => {
-                    const label = event.target.value || event.target.textContent;
+                switchCallback: (label) => {
                     const mode  = CONFIG.modes.findIndex(a => a === label);
                     if (mode !== this.state.mode) {
                         this.setState({ explicitMode: mode });
                         this.fetchLyrics(Player.data.track, mode);
                     }
-                    event.preventDefault();
                 },
-                lockCallback: (event) => {
-                    const label = event.target.value || event.target.textContent;
+                lockCallback: (label) => {
                     let mode  = CONFIG.modes.findIndex(a => a === label);
                     if (mode === this.state.lockMode) {
                         mode = -1;
@@ -373,7 +374,6 @@ class LyricsContainer extends react.Component {
                     this.fetchLyrics(Player.data.track, mode);
                     CONFIG.locked = mode;
                     localStorage.setItem("lyrics-plus:lock-mode", mode);
-                    event.preventDefault();
                 },
             }));
     }

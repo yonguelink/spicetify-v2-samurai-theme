@@ -35,13 +35,12 @@ function PopupLyrics() {
         ContextMenu
     } = Spicetify;
 
-    if (!Player || !Player.data ||
-        !CosmosAsync || !LocalStorage || !ContextMenu) {
+    if (!CosmosAsync || !LocalStorage || !ContextMenu) {
         setTimeout(PopupLyrics, 500);
         return;
     }
 
-    const worker = new Worker ("./popupLyrics.js");
+    const worker = new Worker ("./extensions/popupLyrics.js");
     worker.onmessage = function (event) {
         if (event.data === "popup-lyric-update-ui") {
             tick(userConfigs);
@@ -331,7 +330,6 @@ function PopupLyrics() {
     }
 
     let lyricVideoIsOpen = false;
-    let lyricVideoHiddenDueToNoLyrics = false;
     lyricVideo.onenterpictureinpicture = () => {
         lyricVideoIsOpen = true;
         tick(userConfigs);
@@ -355,7 +353,6 @@ function PopupLyrics() {
             if (!lyricVideoIsOpen) {
                 lyricVideo.requestPictureInPicture();
             } else {
-                lyricVideoHiddenDueToNoLyrics = false;
                 document.exitPictureInPicture();
             }
         }
@@ -378,7 +375,7 @@ function PopupLyrics() {
     Player.addEventListener("songchange", updateTrack);
 
     async function updateTrack() {
-        if (!lyricVideoIsOpen && !lyricVideoHiddenDueToNoLyrics) {
+        if (!lyricVideoIsOpen) {
             return;
         }
 
@@ -417,11 +414,7 @@ function PopupLyrics() {
             }
         }
         if (error || !sharedData.lyrics) {
-            lyricVideoHiddenDueToNoLyrics = true;
-            document.exitPictureInPicture();
             sharedData = { error: "No lyric" };
-        } else if (lyricVideoHiddenDueToNoLyrics) {
-            lyricVideo.requestPictureInPicture();
         }
     }
 

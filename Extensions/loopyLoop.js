@@ -6,8 +6,8 @@
 
 /// <reference path="../globals.d.ts" />
 
-(function LoopyLoop(){
-    const bar = document.querySelector(".playback-bar .progress-bar");
+(function LoopyLoop() {
+    const bar = document.querySelector(".playback-bar > div:nth-child(2)");
     if (!bar) {
         setTimeout(LoopyLoop, 100);
         return;
@@ -36,7 +36,8 @@
     bar.append(startMark);
     bar.append(endMark);
 
-    let start = null, end = null;
+    let start = null,
+        end = null;
     let mouseOnBarPercent = 0.0;
 
     function drawOnBar() {
@@ -45,8 +46,8 @@
             return;
         }
         startMark.hidden = endMark.hidden = false;
-        startMark.style.left = (start * 100) + "%";
-        endMark.style.left = (end * 100) + "%";
+        startMark.style.left = start * 100 + "%";
+        endMark.style.left = end * 100 + "%";
     }
     function reset() {
         start = null;
@@ -54,18 +55,18 @@
         drawOnBar();
     }
 
-    let deboucing = 0;
+    let debouncing = 0;
     Spicetify.Player.addEventListener("onprogress", (event) => {
         if (start != null && end != null) {
-            if (deboucing) {
-                if ((event.timeStamp - deboucing) > 1000) {
-                    deboucing = 0;
+            if (debouncing) {
+                if (event.timeStamp - debouncing > 1000) {
+                    debouncing = 0;
                 }
                 return;
             }
             const percent = Spicetify.Player.getProgressPercent();
             if (percent > end || percent < start) {
-                deboucing = event.timeStamp;
+                debouncing = event.timeStamp;
                 Spicetify.Player.seek(start);
                 return;
             }
@@ -94,21 +95,22 @@
     resetBtn.onclick = reset;
 
     const contextMenu = document.createElement("div");
-    contextMenu.id = "loopy-context-menu"
+    contextMenu.id = "loopy-context-menu";
     contextMenu.innerHTML = `<ul tabindex="0" class="main-contextMenu-menu"></ul>`;
     contextMenu.style.position = "absolute";
     contextMenu.firstElementChild.append(startBtn, endBtn, resetBtn);
     document.body.append(contextMenu);
     const { height: contextMenuHeight } = contextMenu.getBoundingClientRect();
     contextMenu.hidden = true;
-    window.addEventListener("click", () => contextMenu.hidden = true);
+    window.addEventListener("click", () => (contextMenu.hidden = true));
 
     bar.oncontextmenu = (event) => {
-        const { x , width } = bar.firstElementChild.getBoundingClientRect(); 
+        const { x, width } = bar.firstElementChild.getBoundingClientRect();
         mouseOnBarPercent = (event.clientX - x) / width;
-        contextMenu.style.transform =
-            `translate(${event.clientX}px,${event.clientY - contextMenuHeight}px)`;
+        contextMenu.style.transform = `translate(${event.clientX}px,${
+            event.clientY - contextMenuHeight
+        }px)`;
         contextMenu.hidden = false;
         event.preventDefault();
     };
-})()
+})();

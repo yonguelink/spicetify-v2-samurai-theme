@@ -121,8 +121,7 @@
 }
 
 .lyrics-lyricsContainer-SyncedLyrics {
-    grid-area: 2/1/-3/-1;
-    max-width: 84%;
+    grid-area: 2/1/-3/-1
 }
 
 .lyrics-lyricsContainer-LyricsLine {
